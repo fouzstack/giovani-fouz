@@ -41,6 +41,30 @@ body {
   font-size: 16px; /*clamp(1rem, calc(0.80rem + 0.33vw), 1.10rem);*/
 }
 
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+  }
+  
+  body {
+    @apply bg-gray-950 text-white;
+    overflow-x: hidden;
+  }
+}
+
+/* Para animaciones suaves */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @keyframes shake {
   0% { transform: translateX(0); }
   25% { transform: translateX(10px); }
@@ -126,38 +150,4 @@ a:hover {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
-.bg-carbon-dark {
-  background-color: var(--carbon-dark);
-}
 
-.bg-carbon-card {
-  background-color: var(--carbon-card);
-}
-
-.bg-carbon-surface {
-  background-color: var(--carbon-surface);
-}
-
-.border-carbon-border {
-  border-color: var(--carbon-border);
-}
-
-.text-carbon-light {
-  color: var(--carbon-light);
-}
-
-.text-carbon-muted {
-  color: var(--carbon-muted);
-}
-
-.text-carbon-accent {
-  color: var(--carbon-accent);
-}
-
-.bg-carbon-accent {
-  background-color: var(--carbon-accent);
-}
-
-.shadow-carbon {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
