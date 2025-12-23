@@ -944,7 +944,9 @@ const CosmicSystemLanding: React.FC = () => {
                 <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse mr-2"></div>
                 <span className="text-sm text-blue-600 dark:text-blue-300">Arquitectura Cósmica</span>
               </div>
-              
+              <div className='py-4'>
+                
+              </div>
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6">
                 <span 
                   className="bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-300 bg-clip-text text-transparent"
