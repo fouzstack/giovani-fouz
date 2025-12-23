@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, KeyboardEvent } from 'react';
+import React, { useEffect, useRef, useState, useCallback, KeyboardEvent, ReactNode } from 'react';
 import CpuChipIcon from '@heroicons/react/24/outline/CpuChipIcon.js';
 import ServerStackIcon from '@heroicons/react/24/outline/ServerStackIcon.js';
 import CommandLineIcon from '@heroicons/react/24/outline/CommandLineIcon.js';
@@ -61,8 +61,36 @@ type Biome = {
 type NavItem = {
   id: SectionId;
   label: string;
-  icon: string;
+  icon: ReactNode;
 };
+
+// Type guard para SectionId
+const isSectionId = (id: string): id is SectionId => {
+  return ['hero', 'ecosystem', 'organisms', 'symbiosis', 'habitat', 'contact', 'about'].includes(id);
+};
+
+// Configuración de color para biomas
+type BiomeColorConfig = {
+  bg: string;
+  border: string;
+  text: string;
+  dot: string;
+};
+
+const biomeColorMap: Record<'cyan' | 'emerald', BiomeColorConfig> = {
+  cyan: {
+    bg: 'from-cyan-500/20 to-blue-500/20',
+    border: 'border-cyan-500/30',
+    text: 'text-cyan-400',
+    dot: 'bg-cyan-500'
+  },
+  emerald: {
+    bg: 'from-emerald-500/20 to-green-500/20',
+    border: 'border-emerald-500/30',
+    text: 'text-emerald-400',
+    dot: 'bg-emerald-500'
+  }
+} as const;
 
 const HybridEcosystemLanding: React.FC = () => {
   // Estados
@@ -310,13 +338,13 @@ const HybridEcosystemLanding: React.FC = () => {
     };
   }, [particleCount, reducedMotion, theme]);
 
-  // Observador para secciones activas
+  // Observador para secciones activas - CORREGIDO: Con type guard
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries: IntersectionObserverEntry[]) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.target.id) {
-            setActiveSection(entry.target.id as SectionId);
+          if (entry.isIntersecting && entry.target.id && isSectionId(entry.target.id)) {
+            setActiveSection(entry.target.id);
           }
         });
       },
@@ -333,8 +361,18 @@ const HybridEcosystemLanding: React.FC = () => {
   const handleSmoothScroll = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     const targetId = e.currentTarget.getAttribute('href')?.replace('#', '');
-    if (!targetId) return;
+    if (!targetId || !isSectionId(targetId)) return;
     
+    scrollToSection(targetId);
+    
+    // Cerrar menú móvil después de hacer clic
+    if (isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [isMobileMenuOpen]);
+
+  // Navegación programática por secciones - CORREGIDO: Sin eventos sintéticos
+  const scrollToSection = useCallback((targetId: SectionId) => {
     const targetElement = document.getElementById(targetId);
     if (targetElement) {
       targetElement.scrollIntoView({ 
@@ -345,15 +383,13 @@ const HybridEcosystemLanding: React.FC = () => {
       // Actualizar URL sin recargar
       window.history.pushState({}, '', `#${targetId}`);
     }
-    
-    // Cerrar menú móvil después de hacer clic
-    if (isMobileMenuOpen) {
-      setIsMobileMenuOpen(false);
-    }
-  }, [reducedMotion, isMobileMenuOpen]);
+  }, [reducedMotion]);
 
-  // Manejar navegación por teclado
-  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>, callback?: () => void) => {
+  // Manejar navegación por teclado - CORREGIDO: Tipado correcto
+  const handleKeyDown = useCallback((
+    e: KeyboardEvent<HTMLElement>, 
+    callback?: () => void
+  ) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       callback?.();
@@ -438,7 +474,7 @@ const HybridEcosystemLanding: React.FC = () => {
         <div 
           className={`relative p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-900/40' : 'bg-white/60'} backdrop-blur-sm border ${organism.color.border} h-full transition-all duration-300 ${!reducedMotion ? 'group-hover:-translate-y-2' : ''}`}
           tabIndex={0}
-          onKeyDown={(e) => handleKeyDown(e)}
+          onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => handleKeyDown(e)}
         >
           <div className={`p-3 rounded-lg bg-gradient-to-br ${organism.color.from.replace('/20', '/10')} ${organism.color.to.replace('/20', '/10')} w-fit mb-6`}>
             <Icon className="h-8 w-8 text-white" />
@@ -472,7 +508,7 @@ const HybridEcosystemLanding: React.FC = () => {
       role="article"
       aria-label={`Simbiosis: ${symbiosis.title}`}
       tabIndex={0}
-      onKeyDown={(e) => handleKeyDown(e)}
+      onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => handleKeyDown(e)}
     >
       <div className="text-4xl mb-6" aria-hidden="true">{symbiosis.icon}</div>
       <h3 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
@@ -487,23 +523,10 @@ const HybridEcosystemLanding: React.FC = () => {
     </div>
   );
 
-  // Renderizar bioma
+  // Renderizar bioma - CORREGIDO: Sin undefined posible
   const renderBiomeCard = (biome: Biome) => {
     const Icon = biome.icon;
-    const colorClasses = {
-      cyan: {
-        bg: 'from-cyan-500/20 to-blue-500/20',
-        border: 'border-cyan-500/30',
-        text: 'text-cyan-400',
-        dot: 'bg-cyan-500'
-      },
-      emerald: {
-        bg: 'from-emerald-500/20 to-green-500/20',
-        border: 'border-emerald-500/30',
-        text: 'text-emerald-400',
-        dot: 'bg-emerald-500'
-      }
-    }[biome.color];
+    const colorClasses = biomeColorMap[biome.color];
 
     return (
       <div key={biome.id} className="group relative" role="article" aria-label={`Bioma: ${biome.title}`}>
@@ -533,7 +556,7 @@ const HybridEcosystemLanding: React.FC = () => {
                   </li>
                 ))}
               </ul>
-              {biome.link && (
+              {biome.link && biome.linkText && (
                 <div className="mt-8 pt-6 border-t border-gray-800/50 dark:border-gray-200/20">
                   <a
                     href={biome.link}
@@ -555,7 +578,7 @@ const HybridEcosystemLanding: React.FC = () => {
     );
   };
 
-  // Renderizar botón de acción principal
+  // Renderizar botón de acción principal - CORREGIDO: Sin type casting innecesario
   const renderPrimaryCTA = () => {
     const ctas = [
       {
@@ -589,7 +612,7 @@ const HybridEcosystemLanding: React.FC = () => {
               className="group relative px-6 py-4 sm:px-8 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 text-white w-full sm:w-auto"
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => handleKeyDown(e)}
+              onKeyDown={(e: React.KeyboardEvent<HTMLAnchorElement>) => handleKeyDown(e)}
             >
               <div className={`absolute inset-0 bg-gradient-to-r ${cta.color} transition-all duration-300`}></div>
               <div className={`absolute inset-0 bg-gradient-to-r ${cta.color.split(' ')[0]} ${cta.color.split(' ')[1]} opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500`}></div>
@@ -785,7 +808,9 @@ const HybridEcosystemLanding: React.FC = () => {
                   className="group relative px-6 py-4 sm:px-8 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 text-white"
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => handleKeyDown(e, () => handleSmoothScroll(e as any))}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLAnchorElement>) => 
+                    handleKeyDown(e, () => scrollToSection('organisms'))
+                  }
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-600 group-hover:from-cyan-700 group-hover:to-blue-700 transition-all duration-300"></div>
                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-600 opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500"></div>
@@ -801,7 +826,9 @@ const HybridEcosystemLanding: React.FC = () => {
                   className={`group px-6 py-4 sm:px-8 rounded-xl border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 ${theme === 'dark' ? 'border-cyan-500/30 hover:border-cyan-500/50 hover:bg-cyan-500/10 focus:ring-offset-gray-900' : 'border-cyan-500/40 hover:border-cyan-500/60 hover:bg-cyan-500/10 focus:ring-offset-white'}`}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => handleKeyDown(e, () => handleSmoothScroll(e as any))}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLAnchorElement>) => 
+                    handleKeyDown(e, () => scrollToSection('habitat'))
+                  }
                 >
                   <span className="flex items-center text-lg font-medium">
                     Ver Habitat
@@ -835,7 +862,7 @@ const HybridEcosystemLanding: React.FC = () => {
                 </span>
               </h2>
               <p className={`max-w-2xl mx-auto text-base sm:text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                El desarrollador detrás del ecosistema
+                El Desarrollador detrás del ecosistema
               </p>
             </div>
             
@@ -992,7 +1019,7 @@ const HybridEcosystemLanding: React.FC = () => {
                   : 'bg-gradient-to-r from-white to-gray-50 hover:from-gray-50 hover:to-gray-100 border-gray-200/50 hover:border-cyan-500/40 focus:ring-offset-white'}`}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => handleKeyDown(e)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLAnchorElement>) => handleKeyDown(e)}
               >
                 <span className="flex items-center text-lg font-semibold">
                   <CubeIcon className="h-5 w-5 mr-3" />
